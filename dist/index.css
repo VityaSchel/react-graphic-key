@@ -1,0 +1,66 @@
+#_styles-module____graphic_key_grid__2TGJy {
+  border: 1px dashed gray;
+}
+#_styles-module____graphic_key_grid__2TGJy ._styles-module____graphic_key_row___zojP {
+  border: 1px solid red;
+}
+#_styles-module____graphic_key_grid__2TGJy ._styles-module____graphic_key_row___zojP ._styles-module____graphic_key_point__1G3Uk {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed blue;
+}
+#_styles-module____graphic_key_grid__2TGJy ._styles-module____graphic_key_row___zojP ._styles-module____graphic_key_point__1G3Uk ._styles-module____graphic_key_selected_point__25cme {
+  background-color: green;
+}
+#_styles-module____graphic_key_grid__2TGJy ._styles-module____graphic_key_row___zojP ._styles-module____graphic_key_point__1G3Uk ._styles-module____graphic_key_unselected_point__3NOpc {
+  background-color: green;
+}
+body {
+  background-color: #aaa;
+}
+
+#_styles____graphic_key_grid__ouSpd {
+  border: 1px dashed gray;
+}
+#_styles____graphic_key_grid__ouSpd ._styles____graphic_key_row__2Ko6J {
+  border: 1px solid red;
+}
+#_styles____graphic_key_grid__ouSpd ._styles____graphic_key_row__2Ko6J ._styles____graphic_key_point__2Jvmh {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed blue;
+}
+#_styles____graphic_key_grid__ouSpd ._styles____graphic_key_row__2Ko6J ._styles____graphic_key_point__2Jvmh ._styles____graphic_key_selected_point__1kBoj {
+  background-color: green;
+}
+#_styles____graphic_key_grid__ouSpd ._styles____graphic_key_row__2Ko6J ._styles____graphic_key_point__2Jvmh ._styles____graphic_key_unselected_point__2q6kU {
+  background-color: green;
+}
+body {
+  background-color: #aaa;
+}
+
+#_styles____graphic_key_grid__hBdAF {
+  border: 1px dashed gray;
+}
+
+._styles____graphic_key_row__3nNG2 {
+  border: 1px solid red;
+}
+
+._styles____graphic_key_point__9t_F_ {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed blue;
+}
+
+._styles____graphic_key_selected_point__1P4hU {
+  background-color: green;
+}
+
+._styles____graphic_key_unselected_point__3g4C1 {
+  background-color: green;
+}
