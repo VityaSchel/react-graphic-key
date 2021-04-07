@@ -4,6 +4,8 @@
 
 [![NPM](https://img.shields.io/npm/v/react-graphic-key.svg)](https://www.npmjs.com/package/react-graphic-key) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
+![Demo](https://user-images.githubusercontent.com/59040542/113913643-9fdc7280-97ed-11eb-87ad-c5a7042b23f5.gif)
+
 ## Install
 
 ```bash
@@ -18,7 +20,7 @@ import GraphicKey from 'react-graphic-key'
 
 function App() {
   render() {
-    return <GraphicKey onEnd={points => alert('Selected '+points)} />
+    return <GraphicKey onEnd={points => alert('Selected '+points.join(', '))} />
   }
 }
 ```
@@ -75,6 +77,33 @@ function App() {
       }} />
   }
 }
+```
+
+## IDs
+
+ID of each point is count of points in row multiplied by row index plus it's position in row:
+
+```
+1 2 3
+4 5 6
+7 8 9
+```
+
+OR
+
+```
+ 1  2  3  4  5
+ 6  7  8  9 10
+11 12 13 14 15
+16 17 18 19 20
+21 22 23 24 25
+```
+
+OR
+
+```
+1 2 3 4  5
+6 7 8 9 10
 ```
 
 ## License
