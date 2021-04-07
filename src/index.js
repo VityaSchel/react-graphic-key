@@ -155,7 +155,7 @@ function GraphicKey(props) {
   const height = nlsh(props.height, 3)
   stopCallback = nlsh(props.onEnd, selected => {})
 
-  if(!stylesAssigned){g
+  if(!stylesAssigned){
     let stylings = nlsh(props.stylings, {})
     styles = Object.assign({}, importedstyles)
     stylesAssigned = true

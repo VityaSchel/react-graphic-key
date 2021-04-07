@@ -297,7 +297,6 @@ function GraphicKey(props) {
   stopCallback = nlsh(props.onEnd, function (selected) {});
 
   if (!stylesAssigned) {
-    g;
     var stylings = nlsh(props.stylings, {});
     styles = Object.assign({}, importedstyles);
     stylesAssigned = true;
