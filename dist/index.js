@@ -24,10 +24,11 @@ var importedstyles = {
   grid: {
     width: 'fit-content',
     userSelect: 'none',
-    position: 'relative'
+    position: 'relative',
+    touchAction: 'none'
   },
   row: {
-    width: 'fit-content',
+    width: 'max-content',
     fontSize: 0
   },
   point: {
@@ -63,7 +64,8 @@ var importedstyles = {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: '#000',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   },
   pointSpanUnselected: {
     display: 'block',
@@ -71,13 +73,15 @@ var importedstyles = {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: 'transparent',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   }
 };
 
 var Selection = /*#__PURE__*/function () {
   function Selection() {
     this.init();
+    this.listenersAdded = false;
   }
 
   var _proto = Selection.prototype;
@@ -88,6 +92,7 @@ var Selection = /*#__PURE__*/function () {
     this.lines = [];
     this.selecting = false;
     this.linePreviousPoint = [];
+    this.currentTouchedPoint = -1;
   };
 
   _proto.start = function start() {
@@ -95,9 +100,46 @@ var Selection = /*#__PURE__*/function () {
 
     this.init();
     this.selecting = true;
-    window.addEventListener('mouseup', function () {
-      return _this.stop();
-    });
+
+    if (!this.listenersAdded) {
+      this.listenersAdded = true;
+      window.addEventListener('pointerup', function () {
+        return _this.stop();
+      });
+      document.querySelector('#__graphic_key_grid').addEventListener('pointermove', function (e) {
+        if (!_this.selecting) {
+          return;
+        }
+
+        try {
+          var elementFromPoint = document.elementFromPoint(e.pageX - window.pageXOffset, e.pageY - window.pageYOffset);
+          var pointID = elementFromPoint.getAttribute('point-id');
+
+          if (pointID === null) {
+            return;
+          }
+
+          if (_this.currentTouchedPoint !== pointID && !_this.selected.includes(pointID)) {
+            var point = refPoints[pointID];
+            var pointNode = refPointsNodes[pointID];
+
+            var _x = pointNode.current.offsetLeft + pointNode.current.offsetWidth / 2;
+
+            var _y = pointNode.current.offsetTop + pointNode.current.offsetHeight / 2;
+
+            point.current.enable();
+
+            _this.select(pointID, {
+              x: _x,
+              y: _y
+            }, function () {
+              return point.current.disable();
+            });
+          }
+        } catch (e) {}
+      });
+    }
+
     this.showLine();
   };
 
@@ -159,6 +201,10 @@ var Selection = /*#__PURE__*/function () {
       return callback();
     });
     this.selecting = false;
+    this.selected = this.selected.map(function (el) {
+      return Number(el);
+    });
+    this.selected = [].concat(new Set(this.selected));
     stopCallback(this.selected);
     this.hideLine();
   };
@@ -169,6 +215,12 @@ var Selection = /*#__PURE__*/function () {
 var svgLineRef = React.createRef(null);
 var buttonsRef = React.createRef(null);
 var sel = new Selection();
+var refPoints;
+var refPointsNodes;
+
+window.expose = function () {
+  return refPoints;
+};
 
 var Point = /*#__PURE__*/function (_React$Component) {
   _inheritsLoose(Point, _React$Component);
@@ -185,6 +237,18 @@ var Point = /*#__PURE__*/function (_React$Component) {
   }
 
   var _proto2 = Point.prototype;
+
+  _proto2.enable = function enable() {
+    this.setState({
+      selected: true
+    });
+  };
+
+  _proto2.disable = function disable() {
+    this.setState({
+      selected: false
+    });
+  };
 
   _proto2.handleStart = function handleStart(e) {
     var _this3 = this;
@@ -237,21 +301,24 @@ var Point = /*#__PURE__*/function (_React$Component) {
 
     return /*#__PURE__*/React.createElement("div", {
       className: "__graphic_key_point",
-      onMouseDown: function onMouseDown(e) {
+      onPointerDown: function onPointerDown(e) {
         return _this5.handleStart(e);
       },
-      onMouseEnter: function onMouseEnter(e) {
+      onPointerEnter: function onPointerEnter(e) {
         return _this5.handleMouseEnter(e);
       },
-      onMouseUp: function onMouseUp() {
+      onPointerUp: function onPointerUp() {
         return _this5.handleStop();
       },
-      style: styles.point
+      style: styles.point,
+      ref: refPointsNodes[this.props['point-id']]
     }, /*#__PURE__*/React.createElement("div", {
       className: this.state.selected ? "__graphic_key_selected_point" : "__graphic_key_unselected_point",
-      style: this.state.selected ? styles.selected_point : styles.unselected_point
+      style: this.state.selected ? styles.selected_point : styles.unselected_point,
+      "point-id": this.props['point-id']
     }, /*#__PURE__*/React.createElement("span", {
-      style: this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected
+      style: this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected,
+      "point-id": this.props['point-id']
     })));
   };
 
@@ -295,6 +362,12 @@ function GraphicKey(props) {
   var width = nlsh(props.width, 3);
   var height = nlsh(props.height, 3);
   stopCallback = nlsh(props.onEnd, function (selected) {});
+  refPoints = Array(width * height).fill().map(function () {
+    return React.createRef(null);
+  });
+  refPointsNodes = Array(width * height).fill().map(function () {
+    return React.createRef(null);
+  });
 
   if (!stylesAssigned) {
     var stylings = nlsh(props.stylings, {});
@@ -321,9 +394,11 @@ function GraphicKey(props) {
 
   var content = Array(height).fill().map(function (el, i) {
     var row = Array(width).fill().map(function (e, j) {
+      var pointID = i * width + j;
       return /*#__PURE__*/React.createElement(Point, {
         key: j,
-        "point-id": i * width + j
+        "point-id": pointID,
+        ref: refPoints[pointID]
       });
     });
     return /*#__PURE__*/React.createElement(PointsRow, {

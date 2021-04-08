@@ -1,31 +1,16 @@
 import React from 'react';
 
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-
-  _setPrototypeOf(subClass, superClass);
-}
-
-function _setPrototypeOf(o, p) {
-  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
-    o.__proto__ = p;
-    return o;
-  };
-
-  return _setPrototypeOf(o, p);
-}
-
-var pointSize = 50;
-var spanSize = 10;
+const pointSize = 50;
+const spanSize = 10;
 var importedstyles = {
   grid: {
     width: 'fit-content',
     userSelect: 'none',
-    position: 'relative'
+    position: 'relative',
+    touchAction: 'none'
   },
   row: {
-    width: 'fit-content',
+    width: 'max-content',
     fontSize: 0
   },
   point: {
@@ -61,7 +46,8 @@ var importedstyles = {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: '#000',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   },
   pointSpanUnselected: {
     display: 'block',
@@ -69,62 +55,93 @@ var importedstyles = {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: 'transparent',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   }
 };
 
-var Selection = /*#__PURE__*/function () {
-  function Selection() {
+class Selection {
+  constructor() {
     this.init();
+    this.listenersAdded = false;
   }
 
-  var _proto = Selection.prototype;
-
-  _proto.init = function init() {
+  init() {
     this.selected = [];
     this.selectedStates = [];
     this.lines = [];
     this.selecting = false;
     this.linePreviousPoint = [];
-  };
+    this.currentTouchedPoint = -1;
+  }
 
-  _proto.start = function start() {
-    var _this = this;
-
+  start() {
     this.init();
     this.selecting = true;
-    window.addEventListener('mouseup', function () {
-      return _this.stop();
-    });
-    this.showLine();
-  };
 
-  _proto.showLine = function showLine() {
-    var svg = svgLineRef.current;
+    if (!this.listenersAdded) {
+      this.listenersAdded = true;
+      window.addEventListener('pointerup', () => this.stop());
+      document.querySelector('#__graphic_key_grid').addEventListener('pointermove', e => {
+        if (!this.selecting) {
+          return;
+        }
+
+        try {
+          let elementFromPoint = document.elementFromPoint(e.pageX - window.pageXOffset, e.pageY - window.pageYOffset);
+          let pointID = elementFromPoint.getAttribute('point-id');
+
+          if (pointID === null) {
+            return;
+          }
+
+          if (this.currentTouchedPoint !== pointID && !this.selected.includes(pointID)) {
+            let point = refPoints[pointID];
+            let pointNode = refPointsNodes[pointID];
+
+            let _x = pointNode.current.offsetLeft + pointNode.current.offsetWidth / 2;
+
+            let _y = pointNode.current.offsetTop + pointNode.current.offsetHeight / 2;
+
+            point.current.enable();
+            this.select(pointID, {
+              x: _x,
+              y: _y
+            }, () => point.current.disable());
+          }
+        } catch (e) {}
+      });
+    }
+
+    this.showLine();
+  }
+
+  showLine() {
+    let svg = svgLineRef.current;
     svg.style.opacity = 1;
     svg.style.width = buttonsRef.current.offsetWidth + 'px';
     svg.setAttribute('width', buttonsRef.current.offsetWidth);
     svg.style.height = buttonsRef.current.offsetHeight + 'px';
     svg.setAttribute('height', buttonsRef.current.offsetHeight);
-  };
+  }
 
-  _proto.hideLine = function hideLine() {
-    var svg = svgLineRef.current;
+  hideLine() {
+    let svg = svgLineRef.current;
     svg.style.opacity = 0;
     svg.style.width = '';
     svg.style.height = '';
-  };
+  }
 
-  _proto.processLine = function processLine() {
-    var lines = this.lines;
+  processLine() {
+    let lines = this.lines;
     svgLineRef.current.innerHTML = '';
 
     if (!styles.hideLine) {
       return;
     }
 
-    lines.forEach(function (line, i) {
-      var lineNode = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+    lines.forEach((line, i) => {
+      let lineNode = document.createElementNS("http://www.w3.org/2000/svg", 'line');
       lineNode.setAttribute('x1', line[0][0]);
       lineNode.setAttribute('y1', line[0][1]);
       lineNode.setAttribute('x2', line[1][0]);
@@ -133,12 +150,12 @@ var Selection = /*#__PURE__*/function () {
       lineNode.setAttribute('stroke-width', styles.lineWidth);
       svgLineRef.current.appendChild(lineNode);
     });
-  };
+  }
 
-  _proto.select = function select(id, coordinates, callback) {
+  select(id, coordinates, callback) {
     this.selected.push(id);
     this.selectedStates.push(callback);
-    var currentPoint = [coordinates.x, coordinates.y];
+    let currentPoint = [coordinates.x, coordinates.y];
 
     if (this.selected.length > 1) {
       this.lines.push([this.linePreviousPoint, currentPoint]);
@@ -146,115 +163,109 @@ var Selection = /*#__PURE__*/function () {
 
     this.linePreviousPoint = currentPoint;
     this.processLine();
-  };
+  }
 
-  _proto.stop = function stop() {
+  stop() {
     if (!this.selecting) {
       return;
     }
 
-    this.selectedStates.forEach(function (callback) {
-      return callback();
-    });
+    this.selectedStates.forEach(callback => callback());
     this.selecting = false;
+    this.selected = this.selected.map(el => Number(el));
+    this.selected = [...new Set(this.selected)];
     stopCallback(this.selected);
     this.hideLine();
-  };
-
-  return Selection;
-}();
-
-var svgLineRef = React.createRef(null);
-var buttonsRef = React.createRef(null);
-var sel = new Selection();
-
-var Point = /*#__PURE__*/function (_React$Component) {
-  _inheritsLoose(Point, _React$Component);
-
-  function Point(props) {
-    var _this2;
-
-    _this2 = _React$Component.call(this, props) || this;
-    _this2.id = props['point-id'];
-    _this2.state = {
-      selected: false
-    };
-    return _this2;
   }
 
-  var _proto2 = Point.prototype;
+}
 
-  _proto2.handleStart = function handleStart(e) {
-    var _this3 = this;
+let svgLineRef = React.createRef(null);
+let buttonsRef = React.createRef(null);
+let sel = new Selection();
+let refPoints;
+let refPointsNodes;
 
+window.expose = () => refPoints;
+
+class Point extends React.Component {
+  constructor(props) {
+    super(props);
+    this.id = props['point-id'];
+    this.state = {
+      selected: false
+    };
+  }
+
+  enable() {
+    this.setState({
+      selected: true
+    });
+  }
+
+  disable() {
+    this.setState({
+      selected: false
+    });
+  }
+
+  handleStart(e) {
     this.setState({
       selected: true
     });
     sel.start();
-    sel.select(this.id, this.calculate(e), function () {
-      return _this3.setState({
-        selected: false
-      });
-    });
-  };
+    sel.select(this.id, this.calculate(e), () => this.setState({
+      selected: false
+    }));
+  }
 
-  _proto2.handleMouseEnter = function handleMouseEnter(e) {
-    var _this4 = this;
-
+  handleMouseEnter(e) {
     if (sel.selecting && !sel.selected.includes(this.id)) {
       this.calculate(e);
-      sel.select(this.id, this.calculate(e), function () {
-        return _this4.setState({
-          selected: false
-        });
-      });
+      sel.select(this.id, this.calculate(e), () => this.setState({
+        selected: false
+      }));
     }
-  };
+  }
 
-  _proto2.calculate = function calculate(e) {
+  calculate(e) {
     this.setState({
       selected: true
     });
 
-    var _x = e.target.offsetLeft + e.target.offsetWidth / 2;
+    let _x = e.target.offsetLeft + e.target.offsetWidth / 2;
 
-    var _y = e.target.offsetTop + e.target.offsetHeight / 2;
+    let _y = e.target.offsetTop + e.target.offsetHeight / 2;
 
     return {
       x: _x,
       y: _y
     };
-  };
+  }
 
-  _proto2.handleStop = function handleStop() {
+  handleStop() {
     sel.stop();
-  };
+  }
 
-  _proto2.render = function render() {
-    var _this5 = this;
-
+  render() {
     return /*#__PURE__*/React.createElement("div", {
       className: "__graphic_key_point",
-      onMouseDown: function onMouseDown(e) {
-        return _this5.handleStart(e);
-      },
-      onMouseEnter: function onMouseEnter(e) {
-        return _this5.handleMouseEnter(e);
-      },
-      onMouseUp: function onMouseUp() {
-        return _this5.handleStop();
-      },
-      style: styles.point
+      onPointerDown: e => this.handleStart(e),
+      onPointerEnter: e => this.handleMouseEnter(e),
+      onPointerUp: () => this.handleStop(),
+      style: styles.point,
+      ref: refPointsNodes[this.props['point-id']]
     }, /*#__PURE__*/React.createElement("div", {
       className: this.state.selected ? "__graphic_key_selected_point" : "__graphic_key_unselected_point",
-      style: this.state.selected ? styles.selected_point : styles.unselected_point
+      style: this.state.selected ? styles.selected_point : styles.unselected_point,
+      "point-id": this.props['point-id']
     }, /*#__PURE__*/React.createElement("span", {
-      style: this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected
+      style: this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected,
+      "point-id": this.props['point-id']
     })));
-  };
+  }
 
-  return Point;
-}(React.Component);
+}
 
 function PointsRow(props) {
   return /*#__PURE__*/React.createElement("div", {
@@ -270,12 +281,8 @@ function Line() {
   });
 }
 
-function nlsh(first, second, appendToSecond) {
-  if (appendToSecond === void 0) {
-    appendToSecond = false;
-  }
-
-  var result = first !== null && first !== undefined ? first : second;
+function nlsh(first, second, appendToSecond = false) {
+  let result = first !== null && first !== undefined ? first : second;
 
   if (appendToSecond) {
     second = result;
@@ -284,18 +291,20 @@ function nlsh(first, second, appendToSecond) {
   }
 }
 
-var stopCallback = function stopCallback(selected) {};
+let stopCallback = selected => {};
 
-var styles = {};
-var stylesAssigned = false;
+let styles = {};
+let stylesAssigned = false;
 
 function GraphicKey(props) {
-  var width = nlsh(props.width, 3);
-  var height = nlsh(props.height, 3);
-  stopCallback = nlsh(props.onEnd, function (selected) {});
+  const width = nlsh(props.width, 3);
+  const height = nlsh(props.height, 3);
+  stopCallback = nlsh(props.onEnd, selected => {});
+  refPoints = Array(width * height).fill().map(() => React.createRef(null));
+  refPointsNodes = Array(width * height).fill().map(() => React.createRef(null));
 
   if (!stylesAssigned) {
-    var stylings = nlsh(props.stylings, {});
+    let stylings = nlsh(props.stylings, {});
     styles = Object.assign({}, importedstyles);
     stylesAssigned = true;
     styles.pointSpanSelected.border = nlsh(stylings.borderWidth, 1) + 'px solid ' + nlsh(stylings.borderColor, '#000');
@@ -317,11 +326,13 @@ function GraphicKey(props) {
     styles.lineWidth = nlsh(stylings.lineWidth, 5);
   }
 
-  var content = Array(height).fill().map(function (el, i) {
-    var row = Array(width).fill().map(function (e, j) {
+  const content = Array(height).fill().map((el, i) => {
+    const row = Array(width).fill().map((e, j) => {
+      let pointID = i * width + j;
       return /*#__PURE__*/React.createElement(Point, {
         key: j,
-        "point-id": i * width + j
+        "point-id": pointID,
+        ref: refPoints[pointID]
       });
     });
     return /*#__PURE__*/React.createElement(PointsRow, {

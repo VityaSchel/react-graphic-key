@@ -4,6 +4,7 @@ import importedstyles from './styles.js'
 class Selection {
   constructor(){
     this.init()
+    this.listenersAdded = false
   }
 
   init() {
@@ -12,13 +13,33 @@ class Selection {
     this.lines = []
     this.selecting = false
     this.linePreviousPoint = []
+    this.currentTouchedPoint = -1
   }
 
   start() {
     this.init()
 
     this.selecting = true
-    window.addEventListener('mouseup', () => this.stop())
+    if(!this.listenersAdded){
+      this.listenersAdded = true
+      window.addEventListener('pointerup', () => this.stop())
+      document.querySelector('#__graphic_key_grid').addEventListener('pointermove', e => {
+        if(!this.selecting) { return; }
+        try {
+          let elementFromPoint = document.elementFromPoint(e.pageX - window.pageXOffset, e.pageY - window.pageYOffset)
+          let pointID = elementFromPoint.getAttribute('point-id')
+          if(pointID === null){ return; }
+          if(this.currentTouchedPoint !== pointID && !this.selected.includes(pointID)){
+            let point = refPoints[pointID]
+            let pointNode = refPointsNodes[pointID]
+            let _x = pointNode.current.offsetLeft + pointNode.current.offsetWidth / 2
+            let _y = pointNode.current.offsetTop + pointNode.current.offsetHeight / 2
+            point.current.enable()
+            this.select(pointID, {x: _x, y: _y}, () => point.current.disable())
+          }
+        } catch(e) {}
+      })
+    }
     this.showLine()
   }
 
@@ -71,6 +92,8 @@ class Selection {
     if(!this.selecting) { return; }
     this.selectedStates.forEach(callback => callback())
     this.selecting = false
+    this.selected = this.selected.map(el => Number(el))
+    this.selected = [...new Set(this.selected)] // remove duplicates
     stopCallback(this.selected)
     this.hideLine()
   }
@@ -79,6 +102,9 @@ class Selection {
 let svgLineRef = React.createRef(null)
 let buttonsRef = React.createRef(null)
 let sel = new Selection()
+let refPoints;
+let refPointsNodes;
+window.expose = () => refPoints
 
 class Point extends React.Component {
   constructor(props){
@@ -87,6 +113,14 @@ class Point extends React.Component {
     this.state = {
       selected: false
     }
+  }
+
+  enable(){
+    this.setState({selected: true})
+  }
+
+  disable(){
+    this.setState({selected: false})
   }
 
   handleStart(e) {
@@ -115,11 +149,17 @@ class Point extends React.Component {
 
   render() {
     return (
-      <div className="__graphic_key_point" onMouseDown={(e) => this.handleStart(e)} onMouseEnter={(e) => this.handleMouseEnter(e)}
-           onMouseUp={() => this.handleStop()} style={styles.point}>
+      <div className="__graphic_key_point"
+           onPointerDown={e => this.handleStart(e)}
+           onPointerEnter={e => this.handleMouseEnter(e)}
+           onPointerUp={() => this.handleStop()}
+           style={styles.point}
+           ref={refPointsNodes[this.props['point-id']]}>
         <div className={this.state.selected?"__graphic_key_selected_point":"__graphic_key_unselected_point"}
-             style={this.state.selected?styles.selected_point:styles.unselected_point}>
-             <span style={this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected}/>
+             style={this.state.selected?styles.selected_point:styles.unselected_point}
+             point-id={this.props['point-id']}>
+             <span style={this.state.selected ? styles.pointSpanSelected : styles.pointSpanUnselected}
+                   point-id={this.props['point-id']}/>
            </div>
       </div>
     )
@@ -155,6 +195,9 @@ function GraphicKey(props) {
   const height = nlsh(props.height, 3)
   stopCallback = nlsh(props.onEnd, selected => {})
 
+  refPoints = Array(width*height).fill().map(() => React.createRef(null))
+  refPointsNodes = Array(width*height).fill().map(() => React.createRef(null))
+
   if(!stylesAssigned){
     let stylings = nlsh(props.stylings, {})
     styles = Object.assign({}, importedstyles)
@@ -177,7 +220,10 @@ function GraphicKey(props) {
   }
 
   const content = Array(height).fill().map((el, i) => {
-    const row = Array(width).fill().map((e, j) => <Point key={j} point-id={i*width+j}></Point>)
+    const row = Array(width).fill().map((e, j) => {
+      let pointID = i*width+j
+      return <Point key={j} point-id={pointID} ref={refPoints[pointID]}></Point>
+    })
 
     return <PointsRow key={i}>{row}</PointsRow>
   })

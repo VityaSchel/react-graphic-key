@@ -5,11 +5,12 @@ export default {
   grid: {
     width: 'fit-content',
     userSelect: 'none',
-    position: 'relative'
+    position: 'relative',
+    touchAction: 'none'
   },
 
   row: {
-    width: 'fit-content',
+    width: 'max-content',
     fontSize: 0
   },
 
@@ -50,7 +51,8 @@ export default {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: '#000',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   },
 
   pointSpanUnselected: {
@@ -59,6 +61,7 @@ export default {
     width: spanSize + 'px',
     height: spanSize + 'px',
     backgroundColor: 'transparent',
-    border: '1px solid #000'
+    border: '1px solid #000',
+    touchAction: 'none'
   }
 }
